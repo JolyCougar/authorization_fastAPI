@@ -25,6 +25,7 @@ async def register(username: str, password: str):
         )
     return {"message": "User created successfully"}
 
+
 @app.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
@@ -40,7 +41,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 # Подключение маршрутов
 app.include_router(protected_router, prefix="/api", tags=["protected"])
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
