@@ -1,45 +1,41 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
-from app.db import create_user, get_user
-from app.auth import authenticate_user, create_access_token
-from app.routes.protected import router as protected_router
-from app.config import TOKEN_EXPIRE_DELTA
+from fastapi import FastAPI, HTTPException, Depends
+from sqlalchemy.orm import Session
+from app.models import UserCreate, UserResponse
+from app.db import SessionLocal, init_db, User
+from app.db import pwd_context
 import uvicorn
+
+# Инициализация базы данных
+init_db()
 
 app = FastAPI()
 
+# Зависимость для получения сессии базы данных
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-@app.post("/register")
-async def register(username: str, password: str):
-    existing_user = get_user(username)
+@app.post("/register", response_model=UserResponse)
+async def register(user: UserCreate, db: Session = Depends(get_db)):
+    """
+    Регистрация нового пользователя.
+    """
+    # Проверяем, существует ли пользователь
+    existing_user = db.query(User).filter(User.username == user.username).first()
     if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="User already exists"
-        )
-    user = create_user(username, password)
-    if not user:
-        raise HTTPException(
-            status_code=500,
-            detail="Could not create user"
-        )
-    return {"message": "User created successfully"}
+        raise HTTPException(status_code=400, detail="User already exists")
 
-@app.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token = create_access_token(data={"sub": user["username"]}, expires_delta=TOKEN_EXPIRE_DELTA)
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Создаем нового пользователя
+    hashed_password = pwd_context.hash(user.password)
+    new_user = User(username=user.username, hashed_password=hashed_password)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
 
-
-# Подключение маршрутов
-app.include_router(protected_router, prefix="/api", tags=["protected"])
+    return new_user
 
 
 if __name__ == "__main__":

@@ -1,38 +1,26 @@
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from passlib.context import CryptContext
+from sqlalchemy.orm import sessionmaker
 
+DATABASE_URL = "sqlite:///./test.db"  # SQLite, но можно подключить PostgreSQL, MySQL и т.д.
+
+Base = declarative_base()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# база данных
-fake_users_db = {
-    "admin": {
-        "username": "admin",
-        "hashed_password": pwd_context.hash("admin"),
-    }
-}
+# Настройка подключения
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def get_user(username: str):
-    """Получить пользователя из БД."""
-    return fake_users_db.get(username)
+def init_db():
+    Base.metadata.create_all(bind=engine)
 
 
-def verify_password(plain_password, hashed_password):
-    """Проверить, совпадает ли пароль с хешем."""
-    return pwd_context.verify(plain_password, hashed_password)
+# Определение ORM-модели пользователя
+class User(Base):
+    __tablename__ = "users"
 
-
-def get_password_hash(password: str):
-    """Хешировать пароль."""
-    return pwd_context.hash(password)
-
-
-def create_user(username: str, password: str):
-    """Создать нового пользователя."""
-    if username in fake_users_db:
-        return None  # Пользователь уже существует
-    hashed_password = get_password_hash(password)
-    fake_users_db[username] = {
-        "username": username,
-        "hashed_password": hashed_password,
-    }
-    return fake_users_db[username]
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
