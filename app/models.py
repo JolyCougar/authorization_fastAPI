@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 
+
 class UserCreate(BaseModel):
     """Модель для регистрации нового пользователя."""
     username: str
     password: str
+
 
 class UserResponse(BaseModel):
     """Модель для ответа при запросе пользователя."""
