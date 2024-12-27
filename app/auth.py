@@ -1,11 +1,16 @@
 from typing import Optional
 
 from app.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.db import User, SessionLocal, verify_password
+
+
+# Указываем путь, где используется авторизация
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
