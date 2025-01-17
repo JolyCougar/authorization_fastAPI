@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,7 +7,7 @@ from starlette.requests import Request
 
 from auth.models import User
 from auth.schemas import UserResponse, UserCreate
-from auth.service import authenticate_user, create_access_token, get_current_user
+from auth.service import authenticate_user, create_access_token, get_current_user_from_jwt, oauth2_scheme, get_current_user_from_db
 from auth.utils import get_password_hash
 from db import database
 
@@ -33,5 +35,12 @@ async def login(username: str, password: str, db: AsyncSession = Depends(databas
 
 
 @router.get("/protected")
-async def protected_route(current_user: User = Depends(get_current_user)):
+async def protected_route(
+        credentials:
+        Annotated[
+            HTTPAuthorizationCredentials,
+            Depends(oauth2_scheme)],
+        db: AsyncSession = Depends(database.session_getter)):
+    current_user= await get_current_user_from_jwt(credentials, db)
+
     return {"message": f"Hello, {current_user.username}!"}

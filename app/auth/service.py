@@ -4,6 +4,7 @@ from typing import Optional, Set, Annotated
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials, HTTPBearer, HTTPBasic
 from jose import jwt, JWTError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
@@ -28,11 +29,18 @@ async def authenticate_user(db: AsyncSession, username: str, password: str):
     return user
 
 
-async def get_current_user(credentials:
-Annotated[
-    HTTPAuthorizationCredentials,
-    Depends(oauth2_scheme)],
-db: AsyncSession = Depends(database.session_getter)):
+async def get_current_user_from_db(db: AsyncSession, username: str):
+    result = await db.execute(
+        select(User).where(User.username == username)
+    )
+    user = result.scalars().first()
+    return user
+
+
+async def get_current_user_from_jwt(
+        credentials: HTTPAuthorizationCredentials,
+        db: AsyncSession,
+):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
@@ -45,13 +53,9 @@ db: AsyncSession = Depends(database.session_getter)):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
+    result = await get_current_user_from_db(db, username)
 
-
-    user = await db.get(User, username)
-
-    if user is None:
-        raise credentials_exception
-    return user
+    return result
 
 
 revoked_tokens: Set[str] = set()
