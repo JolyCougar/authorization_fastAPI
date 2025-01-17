@@ -1,16 +1,11 @@
-from pydantic import BaseModel
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 
-class UserCreate(BaseModel):
-    """Модель для регистрации нового пользователя."""
-    username: str
-    password: str
-
-
-class UserResponse(BaseModel):
-    """Модель для ответа при запросе пользователя."""
-    id: int
-    username: str
-
-    class Config:
-        orm_mode = True  # Для работы с ORM-моделями
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)

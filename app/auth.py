@@ -6,8 +6,9 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
-from app.db import User, SessionLocal, verify_password
-
+from app.db import SessionLocal
+from utils import verify_password
+from models import User
 
 # Указываем путь, где используется авторизация
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
