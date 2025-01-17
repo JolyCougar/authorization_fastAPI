@@ -5,10 +5,6 @@ from app.db import database
 from auth.models import Base
 from auth import auth_router
 
-app = FastAPI()
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,7 +14,8 @@ async def lifespan(app: FastAPI):
 
 
 
-
+app = FastAPI(lifespan=lifespan)
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
 
 
 
