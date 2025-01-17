@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.db import database
-from utils import get_password_hash
-from models import User
-from app.auth_a import authenticate_user, create_access_token
-from schemas import UserCreate, UserResponse
+
+from auth.models import User
+from auth.schemas import UserResponse, UserCreate
+from auth.service import authenticate_user, create_access_token, get_current_user
+from auth.utils import get_password_hash
+from db import database
 
 router = APIRouter()
 
@@ -29,3 +30,8 @@ async def login(username: str, password: str, db: Session = Depends(database.ses
         raise HTTPException(status_code=401, detail="Invalid username or password")
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/protected")
+async def protected_route(current_user: User = Depends(get_current_user)):
+    return {"message": f"Hello, {current_user.username}!"}
