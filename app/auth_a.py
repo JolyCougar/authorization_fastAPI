@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
+from app.db import database
 from utils import verify_password
 from models import User
 
@@ -28,7 +28,7 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(SessionLocal)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.session_getter)):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
